@@ -1,0 +1,108 @@
+name: SoloFounder Agent CI
+
+on:
+  push:
+    branches: [main, dev, staging]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-agent:
+    name: Validate GitAgent Spec
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install gitagent CLI
+        run: npm install -g gitagent
+
+      - name: Validate agent spec
+        run: gitagent validate
+
+      - name: Validate SOD compliance
+        run: gitagent validate --compliance
+
+      - name: Print agent info
+        run: gitagent info
+
+  validate-structure:
+    name: Validate Required Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check required files exist
+        run: |
+          echo "Checking required gitagent files..."
+          test -f agent.yaml    && echo "✅ agent.yaml" || (echo "❌ agent.yaml missing" && exit 1)
+          test -f SOUL.md       && echo "✅ SOUL.md"    || (echo "❌ SOUL.md missing" && exit 1)
+          test -f RULES.md      && echo "✅ RULES.md"
+          test -f DUTIES.md     && echo "✅ DUTIES.md"
+          test -f AGENTS.md     && echo "✅ AGENTS.md"
+          echo "Checking sub-agents..."
+          for agent in architect coder reviewer qa-engineer; do
+            test -f "agents/$agent/agent.yaml" && echo "✅ agents/$agent/agent.yaml" || echo "⚠️  agents/$agent/agent.yaml missing"
+            test -f "agents/$agent/SOUL.md"    && echo "✅ agents/$agent/SOUL.md"    || echo "⚠️  agents/$agent/SOUL.md missing"
+          done
+          echo "Checking skills..."
+          for skill in react-native-dev firebase-ops feature-planning code-review documentation; do
+            test -f "skills/$skill/SKILL.md" && echo "✅ skills/$skill/SKILL.md" || echo "⚠️  skills/$skill/SKILL.md missing"
+          done
+          echo "All checks passed ✅"
+
+  lint-yaml:
+    name: Lint YAML Files
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install yamllint
+        run: pip install yamllint
+
+      - name: Lint agent.yaml and tool definitions
+        run: |
+          yamllint agent.yaml
+          yamllint agents/*/agent.yaml
+          yamllint tools/*.yaml
+          yamllint workflows/*.yaml
+          echo "YAML linting passed ✅"
+
+  export-test:
+    name: Test Export Formats
+    runs-on: ubuntu-latest
+    needs: [validate-agent]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install gitagent CLI
+        run: npm install -g gitagent
+
+      - name: Export to system prompt
+        run: gitagent export --format system-prompt > /tmp/system-prompt.txt && echo "✅ system-prompt export"
+
+      - name: Export to claude-code
+        run: gitagent export --format claude-code > /tmp/claude-code.md && echo "✅ claude-code export"
+
+      - name: Upload exports as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: exported-formats
+          path: /tmp/*.txt /tmp/*.md

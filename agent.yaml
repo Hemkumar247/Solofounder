@@ -1,0 +1,100 @@
+spec_version: "0.1.0"
+name: solofoundер
+version: 1.0.0
+description: >
+  A full AI development team in a single git repo. SoloFounder gives solo developers
+  the power of a senior architect, specialist coder, independent reviewer, and QA
+  engineer — all version-controlled, composable, and portable across any runtime.
+
+model:
+  preferred: "claude-opus-4-6"
+  fallback:
+    - "openai:gpt-4o"
+    - "google:gemini-2.0-flash"
+
+skills:
+  - name: react-native-dev
+    source: ./skills/react-native-dev
+  - name: firebase-ops
+    source: ./skills/firebase-ops
+  - name: feature-planning
+    source: ./skills/feature-planning
+  - name: code-review
+    source: ./skills/code-review
+  - name: documentation
+    source: ./skills/documentation
+
+tools:
+  - name: github
+    source: ./tools/github.yaml
+  - name: codebase-search
+    source: ./tools/codebase-search.yaml
+  - name: test-runner
+    source: ./tools/test-runner.yaml
+
+agents:
+  - name: architect
+    source: ./agents/architect
+  - name: coder
+    source: ./agents/coder
+  - name: reviewer
+    source: ./agents/reviewer
+  - name: qa-engineer
+    source: ./agents/qa-engineer
+
+delegation:
+  mode: auto
+  strategy: task-based
+  handoff_protocol: explicit
+
+workflows:
+  - name: feature-dev
+    source: ./workflows/feature-dev.yaml
+  - name: bug-fix
+    source: ./workflows/bug-fix.yaml
+
+memory:
+  enabled: true
+  path: ./memory/runtime
+  auto_commit: true
+  branch_prefix: "solofoundер/session"
+
+knowledge:
+  path: ./knowledge
+  index: index.yaml
+
+hooks:
+  bootstrap: ./hooks/bootstrap.md
+  teardown: ./hooks/teardown.md
+
+compliance:
+  risk_tier: medium
+  segregation_of_duties:
+    roles:
+      - id: architect
+        description: Designs system, makes technical decisions
+        permissions: [design, plan, create]
+      - id: coder
+        description: Implements features and fixes
+        permissions: [create, modify, delete]
+      - id: reviewer
+        description: Reviews code, approves changes
+        permissions: [review, approve, reject]
+      - id: qa-engineer
+        description: Writes tests, validates quality
+        permissions: [test, validate, report]
+    conflicts:
+      - [coder, reviewer]       # coder cannot review own code
+      - [coder, qa-engineer]    # coder cannot test own code
+    assignments:
+      coder: [coder]
+      reviewer: [reviewer]
+      qa-engineer: [qa-engineer]
+      architect: [architect]
+    enforcement: advisory
+  recordkeeping:
+    audit_logging: true
+    retention_period: 90d
+
+extends: null
+dependencies: []

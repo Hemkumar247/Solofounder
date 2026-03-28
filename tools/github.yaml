@@ -1,0 +1,72 @@
+name: github
+description: >
+  MCP-compatible GitHub tool. Enables the agent to open PRs,
+  post review comments, and read diffs.
+
+version: "1.0.0"
+type: mcp
+
+schema:
+  tools:
+    - name: open_pull_request
+      description: Open a new pull request on the connected repository
+      inputSchema:
+        type: object
+        required: [title, body, head, base]
+        properties:
+          title:
+            type: string
+          body:
+            type: string
+          head:
+            type: string
+          base:
+            type: string
+            default: main
+          draft:
+            type: boolean
+            default: false
+
+    - name: post_review_comment
+      description: Post an inline review comment on a PR diff
+      inputSchema:
+        type: object
+        required: [pr_number, path, line, body]
+        properties:
+          pr_number:
+            type: integer
+          path:
+            type: string
+          line:
+            type: integer
+          body:
+            type: string
+
+    - name: submit_review
+      description: Submit a review verdict on a PR
+      inputSchema:
+        type: object
+        required: [pr_number, event]
+        properties:
+          pr_number:
+            type: integer
+          event:
+            type: string
+            enum: [APPROVE, REQUEST_CHANGES, COMMENT]
+          body:
+            type: string
+
+    - name: get_pr_diff
+      description: Retrieve the unified diff for a pull request
+      inputSchema:
+        type: object
+        required: [pr_number]
+        properties:
+          pr_number:
+            type: integer
+
+config:
+  auth:
+    type: env
+    variable: GITHUB_TOKEN
+  base_url: https://api.github.com

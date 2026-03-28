@@ -1,0 +1,50 @@
+name: test-runner
+description: >
+  Run the project test suite and return pass/fail results with coverage.
+
+version: "1.0.0"
+type: local
+
+schema:
+  tools:
+    - name: run_tests
+      description: Execute the Jest test suite
+      inputSchema:
+        type: object
+        properties:
+          pattern:
+            type: string
+            description: Test file pattern or test name filter
+          coverage:
+            type: boolean
+            default: false
+          watch:
+            type: boolean
+            default: false
+
+    - name: run_type_check
+      description: Run TypeScript compiler check with no emit
+      inputSchema:
+        type: object
+        properties:
+          strict:
+            type: boolean
+            default: true
+
+    - name: run_lint
+      description: Run ESLint on specified files or the whole project
+      inputSchema:
+        type: object
+        properties:
+          paths:
+            type: array
+            items:
+              type: string
+          fix:
+            type: boolean
+            default: false
+
+config:
+  test_command: "npx jest"
+  type_check_command: "npx tsc --noEmit"
+  lint_command: "npx eslint"

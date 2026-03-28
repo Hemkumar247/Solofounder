@@ -1,0 +1,157 @@
+name: feature-dev
+description: >
+  Full feature development pipeline. Sequences architect → coder → reviewer → qa-engineer
+  with explicit handoffs and human checkpoints. No step begins without the previous completing.
+
+version: "1.0.0"
+triggers:
+  - manual
+  - keyword: ["build", "implement", "add feature", "new feature"]
+
+inputs:
+  feature_request:
+    description: Human's feature description
+    required: true
+  branch_name:
+    description: Git branch to create (auto-generated if not provided)
+    required: false
+
+steps:
+  # ── Step 1: Architecture ───────────────────────────────────────────
+  design:
+    agent: architect
+    skill: feature-planning
+    prompt: |
+      A new feature has been requested:
+
+      "${{ inputs.feature_request }}"
+
+      Produce a complete design note following the feature-planning skill format.
+      Save it to memory/runtime/key-decisions.md under today's date.
+      End your output with: DESIGN_COMPLETE: [feature-name-slug]
+    outputs:
+      design_note: "${{ steps.design.outputs.design_note }}"
+      feature_slug: "${{ steps.design.outputs.feature_slug }}"
+
+  # ── Human Checkpoint 1 ────────────────────────────────────────────
+  human_design_review:
+    type: human_approval
+    depends_on: [design]
+    message: |
+      📐 Architect has produced a design note for: ${{ steps.design.outputs.feature_slug }}
+
+      Review it in memory/runtime/key-decisions.md.
+      Approve to begin implementation, or reject with notes for the architect to revise.
+    timeout: 72h
+
+  # ── Step 2: Implementation ────────────────────────────────────────
+  implement:
+    agent: coder
+    skill: react-native-dev
+    depends_on: [human_design_review]
+    prompt: |
+      The architect's design for "${{ steps.design.outputs.feature_slug }}" has been approved.
+      Design note is in memory/runtime/key-decisions.md.
+
+      Implement the feature following the design exactly.
+      Before finishing:
+      - Run tsc --noEmit (zero errors)
+      - Run ESLint on changed files (zero warnings)
+      - Remove all console.log statements
+      - Open a PR with a clear description
+
+      End your output with: IMPLEMENTATION_COMPLETE: [pr-reference]
+    outputs:
+      pr_reference: "${{ steps.implement.outputs.pr_reference }}"
+
+  # ── Step 3: Code Review ───────────────────────────────────────────
+  review:
+    agent: reviewer
+    skill: code-review
+    depends_on: [implement]
+    prompt: |
+      The coder has opened a PR for: ${{ steps.design.outputs.feature_slug }}
+      PR reference: ${{ steps.implement.outputs.pr_reference }}
+
+      Perform a full structured review using the code-review skill checklist.
+      The architect's design note is in memory/runtime/key-decisions.md — use it
+      as the acceptance baseline.
+
+      Log your verdict to memory/runtime/audit.md.
+      End with one of: APPROVED | CHANGES_REQUESTED: [list of blockers]
+    outputs:
+      verdict: "${{ steps.review.outputs.verdict }}"
+      blockers: "${{ steps.review.outputs.blockers }}"
+
+  # ── Conditional: Loop back to coder if changes requested ──────────
+  revision:
+    agent: coder
+    skill: react-native-dev
+    depends_on: [review]
+    conditions:
+      - "${{ steps.review.outputs.verdict == 'CHANGES_REQUESTED' }}"
+    prompt: |
+      The reviewer has requested changes on PR: ${{ steps.implement.outputs.pr_reference }}
+
+      Blockers to resolve:
+      ${{ steps.review.outputs.blockers }}
+
+      Fix each blocking issue, re-run quality gates, and push to the same branch.
+      End with: REVISION_COMPLETE
+    outputs:
+      revision_done: true
+
+  # ── Re-review after revision ──────────────────────────────────────
+  re_review:
+    agent: reviewer
+    skill: code-review
+    depends_on: [revision]
+    conditions:
+      - "${{ steps.revision.outputs.revision_done == true }}"
+    prompt: |
+      The coder has addressed your blockers on: ${{ steps.implement.outputs.pr_reference }}
+      Re-review the updated diff and confirm all blockers are resolved.
+      End with: APPROVED | CHANGES_REQUESTED: [remaining blockers]
+    outputs:
+      final_verdict: "${{ steps.re_review.outputs.final_verdict }}"
+
+  # ── Step 4: QA ────────────────────────────────────────────────────
+  qa:
+    agent: qa-engineer
+    depends_on: [review]
+    conditions:
+      - "${{ steps.review.outputs.verdict == 'APPROVED' || steps.re_review.outputs.final_verdict == 'APPROVED' }}"
+    prompt: |
+      The reviewer has approved: ${{ steps.design.outputs.feature_slug }}
+      PR reference: ${{ steps.implement.outputs.pr_reference }}
+
+      Perform full QA:
+      1. Write tests covering acceptance criteria from the design note
+      2. Write edge case tests
+      3. Run the full test suite — confirm no regressions
+      4. Produce a QA report in memory/runtime/qa-reports/${{ steps.design.outputs.feature_slug }}.md
+
+      End with: QA_PASS | QA_FAIL: [reasons]
+    outputs:
+      qa_verdict: "${{ steps.qa.outputs.qa_verdict }}"
+
+  # ── Human Checkpoint 2: Final merge decision ──────────────────────
+  human_merge:
+    type: human_approval
+    depends_on: [qa]
+    conditions:
+      - "${{ steps.qa.outputs.qa_verdict == 'QA_PASS' }}"
+    message: |
+      ✅ Feature "${{ steps.design.outputs.feature_slug }}" has passed all gates:
+      - Architect: DESIGNED
+      - Coder: IMPLEMENTED
+      - Reviewer: APPROVED
+      - QA: PASSED
+
+      Review the QA report in memory/runtime/qa-reports/${{ steps.design.outputs.feature_slug }}.md
+      then merge the PR when ready.
+
+error_handling:
+  on_failure: pause
+  notify: human
+  log_to: memory/runtime/dailylog.md

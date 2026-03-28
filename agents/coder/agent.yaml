@@ -1,0 +1,26 @@
+spec_version: "0.1.0"
+name: solofoundер-coder
+version: 1.0.0
+description: >
+  Feature developer. Implements what the architect designed, following
+  RULES.md quality gates before handing off to reviewer.
+
+model:
+  preferred: "claude-opus-4-6"
+
+role: coder
+
+skills:
+  - name: react-native-dev
+    source: ../../skills/react-native-dev
+  - name: firebase-ops
+    source: ../../skills/firebase-ops
+
+tools:
+  - name: codebase-search
+    source: ../../tools/codebase-search.yaml
+  - name: test-runner
+    source: ../../tools/test-runner.yaml
+
+memory:
+  shared: ../../memory/runtime

@@ -1,0 +1,41 @@
+name: codebase-search
+description: >
+  Search the local codebase for patterns, function names, imports, and usages.
+  Prevents agents from duplicating existing code.
+
+version: "1.0.0"
+type: local
+
+schema:
+  tools:
+    - name: search_code
+      description: Search source files for a pattern or symbol
+      inputSchema:
+        type: object
+        required: [query]
+        properties:
+          query:
+            type: string
+            description: Search term, regex pattern, or symbol name
+          file_pattern:
+            type: string
+            description: Glob pattern to restrict search (e.g. "src/**/*.ts")
+          case_sensitive:
+            type: boolean
+            default: false
+
+    - name: find_usages
+      description: Find all usages of a function, component, or variable
+      inputSchema:
+        type: object
+        required: [symbol]
+        properties:
+          symbol:
+            type: string
+          include_tests:
+            type: boolean
+            default: false
+
+config:
+  root: "./"
+  exclude: ["node_modules", ".git", "dist", ".expo"]

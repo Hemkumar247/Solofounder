@@ -1,0 +1,24 @@
+spec_version: "0.1.0"
+name: solofoundер-reviewer
+version: 1.0.0
+description: >
+  Independent code reviewer. Reviews PRs opened by the coder,
+  enforces conventions, catches bugs before they reach main.
+
+model:
+  preferred: "claude-opus-4-6"
+
+role: reviewer
+
+skills:
+  - name: code-review
+    source: ../../skills/code-review
+
+tools:
+  - name: github
+    source: ../../tools/github.yaml
+  - name: codebase-search
+    source: ../../tools/codebase-search.yaml
+
+memory:
+  shared: ../../memory/runtime

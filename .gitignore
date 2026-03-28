@@ -1,0 +1,25 @@
+# Secrets — never tracked
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+secrets/
+
+# Runtime state that regenerates
+.gitagent/
+node_modules/
+dist/
+.expo/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+.idea/
+
+# Memory runtime IS tracked (committed by agents after sessions)
+# Do NOT add memory/ here

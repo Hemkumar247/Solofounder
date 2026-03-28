@@ -1,0 +1,22 @@
+spec_version: "0.1.0"
+name: solofoundер-architect
+version: 1.0.0
+description: >
+  Senior software architect. Designs systems, decides tech stack,
+  creates architecture artifacts before any code is written.
+
+model:
+  preferred: "claude-opus-4-6"
+
+role: architect
+
+skills:
+  - name: feature-planning
+    source: ../../skills/feature-planning
+
+tools:
+  - name: codebase-search
+    source: ../../tools/codebase-search.yaml
+
+memory:
+  shared: ../../memory/runtime

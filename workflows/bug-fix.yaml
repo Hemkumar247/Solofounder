@@ -1,0 +1,88 @@
+name: bug-fix
+description: >
+  Bug fix pipeline. QA engineer writes a reproduction test first,
+  then coder fixes, reviewer verifies, human merges.
+
+version: "1.0.0"
+triggers:
+  - manual
+  - keyword: ["bug", "fix", "broken", "error", "crash", "not working"]
+
+inputs:
+  bug_description:
+    description: What is broken and how to reproduce it
+    required: true
+  severity:
+    description: "critical | high | medium | low"
+    required: false
+    default: "medium"
+
+steps:
+  # ── Step 1: Reproduce ─────────────────────────────────────────────
+  reproduce:
+    agent: qa-engineer
+    prompt: |
+      A bug has been reported with severity: ${{ inputs.severity }}
+
+      Description:
+      "${{ inputs.bug_description }}"
+
+      1. Write a failing test that reproduces this bug exactly
+      2. Confirm the test fails before any fix is applied
+      3. Save the test to the appropriate __tests__ file
+      4. Document the reproduction steps in memory/runtime/dailylog.md
+
+      End with: REPRODUCED: [test file and test name]
+    outputs:
+      test_reference: "${{ steps.reproduce.outputs.test_reference }}"
+
+  # ── Step 2: Fix ───────────────────────────────────────────────────
+  fix:
+    agent: coder
+    skill: react-native-dev
+    depends_on: [reproduce]
+    prompt: |
+      QA has written a failing test for this bug:
+      ${{ steps.reproduce.outputs.test_reference }}
+
+      Fix the bug so that test passes without modifying the test itself.
+      Run the full test suite to confirm no regressions.
+      Open a PR referencing the test.
+
+      End with: FIX_COMPLETE: [pr-reference]
+    outputs:
+      pr_reference: "${{ steps.fix.outputs.pr_reference }}"
+
+  # ── Step 3: Review ────────────────────────────────────────────────
+  review:
+    agent: reviewer
+    skill: code-review
+    depends_on: [fix]
+    prompt: |
+      Review the bug fix PR: ${{ steps.fix.outputs.pr_reference }}
+
+      Key questions:
+      - Does the fix address the root cause, not just the symptom?
+      - Could this fix break anything else?
+      - Is the failing test now passing?
+
+      End with: APPROVED | CHANGES_REQUESTED: [blockers]
+    outputs:
+      verdict: "${{ steps.review.outputs.verdict }}"
+
+  # ── Human Merge ───────────────────────────────────────────────────
+  human_merge:
+    type: human_approval
+    depends_on: [review]
+    conditions:
+      - "${{ steps.review.outputs.verdict == 'APPROVED' }}"
+    message: |
+      🐛 Bug fix is ready to merge.
+      Severity: ${{ inputs.severity }}
+      PR: ${{ steps.fix.outputs.pr_reference }}
+      All tests passing. Reviewer approved.
+
+error_handling:
+  on_failure: pause
+  notify: human
+  log_to: memory/runtime/dailylog.md

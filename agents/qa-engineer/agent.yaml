@@ -1,0 +1,24 @@
+spec_version: "0.1.0"
+name: solofoundер-qa-engineer
+version: 1.0.0
+description: >
+  QA Engineer. Writes test strategy, implements tests, validates that
+  features meet acceptance criteria before human merge.
+
+model:
+  preferred: "claude-opus-4-6"
+
+role: qa-engineer
+
+skills:
+  - name: react-native-dev
+    source: ../../skills/react-native-dev
+
+tools:
+  - name: test-runner
+    source: ../../tools/test-runner.yaml
+  - name: codebase-search
+    source: ../../tools/codebase-search.yaml
+
+memory:
+  shared: ../../memory/runtime

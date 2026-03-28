@@ -1,0 +1,19 @@
+# Knowledge Index
+# All agents consult this directory. Files are loaded by relevance to the task.
+
+files:
+  - path: codebase-map.md
+    description: Current project folder structure and pattern catalogue
+    agents: [architect, coder, reviewer, qa-engineer]
+
+  - path: react-native-patterns.md
+    description: Approved patterns and anti-patterns for this codebase
+    agents: [coder, reviewer]
+
+  - path: firebase-schema.md
+    description: Live Firebase data model — updated by architect on schema changes
+    agents: [architect, coder, reviewer, qa-engineer]
+
+  - path: design-tokens.md
+    description: Color, typography, spacing tokens for the glassmorphism design system
+    agents: [coder]
